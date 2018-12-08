@@ -75,6 +75,7 @@ to_csv("train", 1000)
 to_csv("t10k", 500)
 
 
+"""
 def load_csv(fname):
 	labels = []
 	images = []
@@ -103,53 +104,40 @@ cl_report = metrics.classification_report(test["labels"], predict)
 print("정답률 =", ac_score)
 print("리포트 =")
 print(cl_report)
-
-
-
 """
-print("x6과 x8을 기준으로 학습을 하여 분석한 결과를 보여드리겠습니다. ")
-csv = []
-with open('train.csv', 'r', encoding='utf-8') as fp:
-	# 한 줄씩 읽어 들이기
-	for line in fp:
-		line = line.strip()		# 줄바꿈 제거
-		cols = line.split(',') 	# 쉼표로 자르기
-		# 문자열 데이터를 숫자로 변환하기
-		fn = lambda n : float(n) if re.match(r'^[0-9\.]+$', n) else n
-		cols = list(map(fn, cols))
-		csv.append(cols)
+def load_csv(fname):
+	labels = []
+	images = []
+	with open(fname, "r") as f:
+		for line in f:
+			cols = line.split(",")
+			if len(cols) < 2: continue
+			labels.append(int(cols.pop(0)))
+			vals = list(map(lambda n: int(n) / 256, cols))
+			images.append(vals)
+	return {"labels":labels, "images":images}
 
+total = load_csv("./mnist/train.csv")
 
-# 가장 앞 줄의 헤더 제거
-del csv[0]
-
-# 데이터 셔플하기(섞기) --- (※2)
-random.shuffle(csv)
-
-# 학습 전용 데이터와 테스트 전용 데이터 분할하기(3:1 비율) --- (※3)
-total_len = len(csv)
+#9 : 1 비율로 나누기
+print("9 : 1 비율로 나누는 중입니다.")
+total_len = len(total)
 train_len = int(total_len * 9 / 10)
-train_data = []
-train_label = []
-test_data = []
-test_label = []
+print(type(total))
+test = total
+data = total
 
-for i in range(total_len):
-	data = csv[i][0:9]
-	label = csv[i][5]
-	if i < train_len:
-		train_data.append(data)
-		train_label.append(label)
-	else:
-		test_data.append(data)
-		test_label.append(label)
-
-# 데이터를 학습시키고 예측하기 --- (※4)
+# 학습하기 --- (※2)
 clf = svm.SVC()
-clf.fit(train_data, train_label)
-pre = clf.predict(test_data)
+print(type(clf))
+clf.fit(data["images"], data["labels"])
 
-# 정답률 구하기 --- (※5)
-ac_score = metrics.accuracy_score(test_label, pre)
-print("X6, 9:1로 분석한 결과 =", ac_score)
-"""
+# 예측하기 --- (※3)
+predict = clf.predict(test["images"])
+
+# 결과 확인하기 --- (※4)
+ac_score = metrics.accuracy_score(test["labels"], predict)
+cl_report = metrics.classification_report(test["labels"], predict)
+print("정답률 =", ac_score)
+print("리포트 =")
+print(cl_report)
